@@ -8,6 +8,7 @@ Binding energies and masses of neutron-rich nuclei feed directly into r-process 
 ## Data
 - AME2020 mass table (IAEA AMDC), measured nuclei only (extrapolated `#` entries removed)
 - Nuclei with A < 16 excluded, since the liquid drop model is not valid there
+- Clean dataset: 2,484 nuclei, A from 16 to 270
 
 ## Models
 1. **Liquid drop**: 5 physics terms (volume, surface, Coulomb, asymmetry, pairing), coefficients fitted by least squares
@@ -16,33 +17,31 @@ Binding energies and masses of neutron-rich nuclei feed directly into r-process 
 4. **Hybrid**: liquid drop + gradient boosting trained on its residuals
 
 ## Experiments
-- **Random 80/20 split** (interpolation)
-- **Extrapolation**: train on A < 180, test on A ≥ 180
+- **Random 80/20 split** (interpolation): 1,987 train / 497 test nuclei
+- **Extrapolation**: train on A < 180, test on A >= 180 (1,790 train / 694 test nuclei)
 
-## Results
-Fill in from `results_random_split.csv` and `results_extrapolation.csv` after running:
+## Results (MeV)
 
-| Model | Random split MAE (MeV) | Extrapolation MAE (MeV) |
-|---|---|---|
-| Liquid drop | | |
-| Random forest | | |
-| Gradient boosting | | |
-| Liquid drop + GB residual | | |
+| Model | Random split RMSE | Random split MAE | Extrapolation RMSE | Extrapolation MAE |
+|---|---|---|---|---|
+| Liquid drop | 3.353 | 2.356 | 8.535 | 6.693 |
+| Random forest | 4.646 | 3.050 | 254.696 | 215.312 |
+| Gradient boosting | 3.723 | 2.855 | 258.709 | 217.863 |
+| **Liquid drop + GB residual** | **0.514** | **0.370** | **5.973** | **4.407** |
 
 ## Key findings
-Write 3 to 4 sentences here from your own plots: which model wins on each test, how the errors behave near magic numbers (see `figures/residuals_*.png`), and how tree-based models behave when extrapolating.
+- The hybrid model is the best on both tests: RMSE drops by about 85% on the random split (3.35 to 0.51 MeV) and about 30% on the extrapolation test (8.54 to 5.97 MeV).
+- Standalone random forest and gradient boosting do worse than the liquid-drop formula on the random split, so the physics baseline is hard to beat without it.
+- Tree-based models fail badly when extrapolating (errors above 200 MeV), because they cannot predict outside the range of values seen in training. The hybrid avoids this since the liquid-drop term supplies the trend.
 
 ## Run it
 ```bash
-pip install pandas numpy scikit-learn matplotlib
+pip install -r requirements.txt
 python binding_energy.py
 ```
+Download `mass_1.mas20.txt` from https://www-nds.iaea.org/amdc/ame2020/mass_1.mas20.txt and place it in the `data/` folder first.
 
-## Figures
-- `figures/chart_of_nuclides.png`
-- `figures/residuals_random.png`
-- `figures/residuals_extrapolation.png`
-- `figures/pred_vs_true_random.png`
-
-## Possible extensions
-Add shell-correction features (distance to nearest magic number), try a neural network, or compare with the Duflo-Zuker model.
+## Repository contents
+- `binding_energy.py`: full pipeline
+- `results_random_split.csv`, `results_extrapolation.csv`: score tables
+- `figures/`: `chart_of_nuclides.png`, `residuals_random.png`, `residuals_extrapolation.png`, `pred_vs_true_random.png`
